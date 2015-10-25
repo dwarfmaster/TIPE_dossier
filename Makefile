@@ -4,6 +4,9 @@ FILES=formulaire.cls `find . -name "*.tex"`
 
 all: $(OUTDIR) $(MAIN)
 	pdflatex -output-directory $(OUTDIR) $(MAIN)
+
+full: $(OUTDIR) $(MAIN)
+	pdflatex -output-directory $(OUTDIR) $(MAIN)
 	bibtex $(OUTDIR)/main
 	pdflatex -output-directory $(OUTDIR) $(MAIN)
 	pdflatex -output-directory $(OUTDIR) $(MAIN)
