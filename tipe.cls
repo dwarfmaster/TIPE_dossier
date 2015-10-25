@@ -7,43 +7,46 @@
           ] {article}
 
 % Gestion des caractères
-\RequirePackage[utf8]                               {inputenc}
-\RequirePackage[T1]                                 {fontenc}
+\RequirePackage[utf8]            {inputenc}
+\RequirePackage[T1]              {fontenc}
 \renewcommand{\sfdefault}{phv}
-\RequirePackage[francais]                           {babel}
-\RequirePackage[a4paper, includefoot, margin=1.5cm] {geometry}
-\RequirePackage                                     {titlesec}
+\RequirePackage[francais]        {babel}
+\RequirePackage[a4paper,
+                includefoot,
+                left=1.5cm,
+                top=1.5cm,
+                bottom=1.5cm,
+                right=5cm]       {geometry}
+\RequirePackage                  {titlesec}
 
 % Mode mathématique
-\RequirePackage           {amsmath}
-\RequirePackage           {amsfonts}
-\RequirePackage           {amssymb}
-\RequirePackage           {amsthm}
-\RequirePackage           {mathrsfs}
-\RequirePackage           {stmaryrd}
-\RequirePackage[european] {circuitikz}
-\RequirePackage           {fancybox}
-\RequirePackage           {graphicx}
-\RequirePackage           {float}
-\RequirePackage           {pgf, tikz}
+\RequirePackage{amsmath}
+\RequirePackage{amsfonts}
+\RequirePackage{amssymb}
+\RequirePackage{amsthm}
+\RequirePackage{mathrsfs}
+\RequirePackage{stmaryrd} % Pour la commande \seg
+
+% Fonctionnalités supplémentaires
+\RequirePackage                     {fancybox}
+\RequirePackage                     {graphicx}
+\RequirePackage                     {float}
+\RequirePackage                     {pgf, tikz}
+\RequirePackage[french,
+                textwidth=4.5cm,
+                textsize=small,
+                colorinlistoftodos] {todonotes}
 
 % Fonctionnalités additionnelles
 \RequirePackage{tabularx}
 \RequirePackage{hyperref} % Formatage du pdf
 \hypersetup{
-    colorlinks    = false,
+    colorlinks    = true,
     breaklinks    = true,
     urlcolor      = blue,
     linkcolor     = red,
     bookmarksopen = true
 }
-
-% Crée un environnement circuitikz, corrigeant un bug de circuitikz avec babel en français
-\newenvironment{circuit}{ \shorthandoff{:!}
-                          \begin{circuitikz}
-                        }{\end{circuitikz}
-                          \shorthandon{:!}
-                        }
 
 % Nouvelle commandes
 % Équivalence
@@ -57,4 +60,16 @@
 
 % Sinus cardinal
 \newcommand{\sinc}{\text{sinc}}
+
+% TODOs
+% Code couleur :
+%  - bleu   : il faut démontrer quelque chose
+%  - rouge  : il y a un problème lié à LaTeX à corriger (mise en page ...)
+%  - vert   : idées de recherche
+%  - violet : sources à ajouter/cherche
+%  - orange : tout ce qui n'entre dans aucune catégorie
+\newcommand{\demo}[1]{\todo[color=blue!40]{#1}}
+\newcommand{\tdoc}[1]{\todo[color=red]{#1}}
+\newcommand{\idee}[1]{\todo[color=green]{#1}}
+\newcommand{\tref}[1]{\todo[color=purple!40]{#1}}
 
