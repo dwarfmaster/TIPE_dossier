@@ -42,13 +42,14 @@ $3$-SAT est $NP$-complet. On s'intéressera donc au problème $2$-SAT, résolubl
 en temps quasi-linéaire.
 
 \section{Algorithme de résolution}
-On découpe le problème selon les \emph{et}. Chaque entrée est de la forme $x_i$
-ou $x_i \vee x_j$. On va construire le graphe d'implications entre les
-variables. Les nœuds du graphes vont être les $x_i$ et les $\neg x_i$. On les
-relie selon la règle suivante : \begin{itemize}
- \item Pour chaque entrée de la forme $x_i \vee x_j$, on ajoute les arrêtes
+On crée $G$ le graphe orienté dont les nœuds sont les variables et leur
+négation (s'il y a $n$ variables, il y a donc $2n$ nœuds). On étudie chaque
+clause pour former les arrêtes. Le problème étant d'ordre au plus $2$, chaque
+clause est d'ordre au plus $2$. On crée les arrêtes de la façon suivante :
+\begin{itemize}
+ \item Pour chaque clause de la forme $x_i \vee x_j$, on ajoute les arrêtes
        $\neg x_i \rightarrow x_j$ et $\neg x_j \rightarrow x_i$.
- \item Pour chaque entrée de la forme $x_i$, on la considère équivalente à
+ \item Pour chaque clause de la forme $x_i$, on la considère équivalente à
        $x_i \vee x_i$, donc on ajoute $\neg x_i \rightarrow x_i$ au graphe (ce
        qui revient à dire que $x_i$ doit être vrai).
 \end{itemize}
