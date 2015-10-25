@@ -30,16 +30,20 @@ On nomme problème SAT le problème de savoir si un problème $S$ quelconque est
 satisfaisable. Le problème est décidable puisque qu'il suffit de tester toutes
 les valeurs possibles des inconnues pour voir si une convient. La complexité
 est alors exponentielle. L'objectif est de trouver des algorithmes plus
-efficaces. Le problème SAT est cependant $NP$-complet (TODO), donc sous l'hypothèse
-$P\neq NP$, il n'existe pas d'algorithme le résolvant dans le cas général en
-temps polynomial. On s'intéresse donc à des cas particuliers.
+efficaces. Le problème SAT est cependant $NP$-complet,
+\demo{$NP$-complétude du problème SAT}
+donc sous l'hypothèse $P\neq NP$, il n'existe pas d'algorithme le résolvant
+dans le cas général en temps polynomial. On s'intéresse donc à des cas
+particuliers.
 
 On nomme problème $k$-SAT le problème de savoir si un problème $S$ d'ordre au
 plus $k$, $k\in\mathbb{N}^*$, est satisfaisable. Cependant, on peut montrer
 que l'on peut réduire toute formule $S$ d'ordre quelconque en une formule
-équivalente d'ordre au plus $3$ en temps polynomial (TODO). Donc le problème
-$3$-SAT est $NP$-complet. On s'intéressera donc au problème $2$-SAT, résoluble
-en temps quasi-linéaire.
+équivalente d'ordre au plus $3$ en temps polynomial.
+\demo{$NP$-complétude du problème $3$-SAT}
+Donc le problème $3$-SAT est $NP$-complet. On s'intéressera donc au problème
+$2$-SAT, résoluble en temps quasi-linéaire.
+\idee{Chercher toutes les solutions d'un problème $2$-SAT}
 
 \section{Algorithme de résolution}
 On crée $G$ le graphe orienté dont les nœuds sont les variables et leur
@@ -67,6 +71,7 @@ dans la même composante connexe que sa négation. On la note $x$. Le graphe
 vérifier cette condition, donc le problème n'est pas satisfaisable.
 
 \subsubsection{Sens réciproque}
+\tref{De qui vient l'idée de la démonstration}
 On suppose que tout $x$ est dans une composante fortement connexe différente de
 celle dans laquelle est $\neg x$. On va procéder à une preuve constructive, en
 donnant un algorithme qui donnera une solution au problème.
@@ -79,8 +84,9 @@ est le graphe dont on a pris la négation de chaque élément de chaque nœud.
 Enfin, on note $N(G)$ l'ensemble des nœuds du graphe et $E(G) \in N(G)^2$ les
 arrêtes.
 
-Quelques résultats préliminaires, rapides à démontrer (TODO : faire la
-démonstration) : \begin{itemize}
+Quelques résultats préliminaires, rapides à démontrer :
+\demo{Résultat préliminaires de l'algorithme du $2$-SAT}
+\begin{itemize}
  \item $\neg G^r = G$
  \item $\neg S(G) = S(\neg G)$
  \item $S(G)^r = S(G^r)$
@@ -91,8 +97,8 @@ L'objectif est de marquer chaque composante fortement connexe avec vrai ou faux
 de façon que si $x \rightarrow y$, alors $x$ faux ou $x$ et $y$ vrai. De plus,
 il faut que $x$ soit marqué vrai si et seulement si $\neg x$ est marqué faux.
 En applicant ces valeurs aux variables des composantes fortement connexes
-(ce qui est alors possible), on a une solution (TODO : démontrer, découle
-probablement immédiatement de la construction de $G$).
+(ce qui est alors possible), on a une solution.
+\demo{Conditions pour que le coloriage de $S(G)$ soit solution}
 
 On note $(S_1,\ldots S_p)$ les composantes fortement connexes de $G$ triées par
 ordre topologique inverse :
