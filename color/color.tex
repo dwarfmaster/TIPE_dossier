@@ -1,0 +1,25 @@
+\section{$NP$-complétude du $3$-coloriage de graphe.}
+Plusieurs articles ont montré qu'il est possible, à partir d'un problème $3$-SAT,
+de créer un graphe dont l'existence d'un $3$-coloriage est équivalente à la
+satisfaisabilité du $3$-SAT considéré \cite{CMSC451} \tref{Autres sources pour
+l'association $3$-SAT / graphe}. La taille du graphe créé étant polynomial en
+la taille du problème SAT, déterminer l'existence d'un $3$-coloriage pour tout
+graphe en temps polynomial revient à résoudre le $3$-SAT en temps polynomial :
+le $3$-coloriage est $NP$-complet.
+
+\section{Graphe parfait}
+Les graphes parfaits sont une catégorie de graphe très large pour lequel la
+recherche du nombre chromatique se fait en temps polynomial \cite{GrParfaitTrotignon}.
+De plus, leur reconnaissance se fait aussi en temps polynomial \cite{GrParfaitENSLyon}.
+Un façon de résoudre certains $3$-SAT serait de créer le graphe selon la méthode
+précédente, tester si il est parfait et si c'est le cas, calculer son nombre
+chromatique. Bien que ces méthodes soient polynomiales, l'algorithme est
+complexe, il est donc intéressant d'estimer la probabilité qu'un $3$-SAT donne
+un graphe parfait.
+
+En utilisant la caractérisation du théorème fort des graphes parfaits, on se
+rend compte qu'aucune des méthodes usuelles pour obtenir un graphe ne donne
+de graphe parfait. \demo{Non perfection des graphes usuels d'un $3$-SAT}
+
+\idee{Trouver un graphe de $3$-SAT qui ait une chance d'être parfait}
+
