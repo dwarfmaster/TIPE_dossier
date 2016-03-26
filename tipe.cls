@@ -61,6 +61,11 @@
 % Sinus cardinal
 \newcommand{\sinc}{\text{sinc}}
 
+% Satisfiabilité
+\newcommand{\sat}{\text{SAT}}
+\newcommand{\unsat}{\text{UNSAT}}
+\newcommand{\cosat}{\overset{\sat}{\sim}}
+
 % TODOs
 % Code couleur :
 %  - bleu   : il faut démontrer quelque chose
