@@ -1,0 +1,41 @@
+\section{Problème $3$-SAT}
+Le problème $3$-SAT est donc un problème où chaque clause fait intervenir au
+plus trois variables. Au contraire du $2$-SAT, ce problème n'est pas
+significativement plus simple que le SAT puisqu'il est équivalent à ce derniers
+au sens en terme de réduction polynomiale : il est aussi $NP$-complet.
+
+\subsection{Preuve de la $NP$-difficulté du problème $3$-SAT}
+On va montrer que tout problème SAT est réductible en un temps polynomiale à
+un problème 3-SAT.
+
+On considère la clause $v_1 \vee \ldots \vee v_n$ pour $n \geq 3$. Montrons que
+cette clause est satisfaisable si et seulement si :
+\[ (v_1 \vee v_2 \vee x_2) \wedge (\neg x_2 \vee v_3 \vee x_3) \wedge \ldots
+\wedge (\neg x_{n-3} \vee v_{n-2} \vee x_{n-2}) \wedge (\neg x_{n-2} \vee v_{n-1} \vee v_n) \]
+est satisfaisable. On nomme $S_1$ la clause étudiée et $S_2$ le système à
+$2n - 3$ variables.
+
+\tdoc{Améliorer l'intégration des vrai/faux en mode math}
+Supposons que $S_1$ soit satisfaisable. Notons $(v_1,\ldots v_n)$ une
+solution. Comme toute permutation des solutions est aussi solution, on peut
+considérer que $v_1 \vee v_2$ est vrai. Posons alors
+$\forall i\in\seg{2}{n-2}, x_i \leftarrow \text{faux}$. Dans ce cas, on a
+$v_1 \vee v_2 \vee x_2 \rightarrow \text{vrai}$. De plus, pour $i\in\seg{2}{n-3}$,
+on a $\neg x_i \vee v_{i+1} \vee x_{i+1} \rightarrow \text{vrai}$. Enfin, comme
+$\neg x_{n-2} \rightarrow \text{vrai}$, on a
+$\neg x_{n-2} \vee v_{n-1} \vee v_n \rightarrow \text{vrai}$. On a donc trouvé
+une solution du problème $S_2$, il est donc satisfaisable.
+
+Supposons maintenant que $S_2$ soit satisfaisable. Notons $(v_1,\ldots,v_n,x_2,\ldots,x_{n-2})$
+une solution. Par l'absurde, supposons que $\forall i\in\seg{1}{n}, v_i \rightarrow \text{faux}$.
+De plus, chaque clause du problème $S_2$ doit évaluer à vrai pour que $S_2$
+évalue à vrai. On a donc $v_1\vee v_2\vee x_2 \rightarrow x_2$ donc
+$x_2 \rightarrow \text{vrai}$. Par une récurrence finie immédiate, on a donc
+que $\forall i\in\seg{2}{n-2}, x_i \rightarrow\text{vrai}$. Or dans ce cas,
+$\neg x_{n-2}\vee v_{n-1}\vee v_n \rightarrow\text{faux}$, d'où un
+contradiction. On au moins un $v_i$ est vrai, d'où $S_1$ est satisfaisable.
+
+En prenant un problème $S$ d'ordre quelconque (mais fini) à $n$ inconnues, on
+peut le réduire en un système d'ordre au plus $3$ à $2n-3$ inconnues. Le
+problème $3$-SAT est donc $NP$-complet.
+

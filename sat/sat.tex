@@ -1,0 +1,42 @@
+\section{Présentation du problème}
+\subsection{Vocabulaire et notation}
+On nomme une \emph{inconnue} un littéral $v$ pouvant évaluer à \emph{vrai} ou
+\emph{faux}. Une \emph{clause} est une proposition de la forme $\vee_{i=1}^n v_i$.
+Si on note $(v_1,\ldots v_n), n\in\mathbb{N}^*$ les inconnues, on note :
+    \[ \forall i\in\seg{1}{n}, \left\{\begin{array}{l}
+            V_i = v_i \\
+            V_{-i} = \neg v_i
+       \end{array}\right.
+     \]
+
+On a donc $\neg V_i = V_{-i}$.
+
+Posons $E_n = \mathscr{P}(\seg{-n}{-1}\cup\seg{1}{n})$. $C_n = \{\vee_{i\in I} V_i | I\in E_n\}$
+décrit alors l'ensemble des clauses possibles à $n$ inconnues. Soit $C\in C_n$
+et $I\in E_n$ l'ensemble associé. On nomme \emph{ordre} de $C$ le cardinal de
+$I$ : $o(C) = |I|$.
+
+Posons $P_n = \mathscr{P}(E_n)$. $S_n = \{\wedge_{I\in P} (\vee_{i\in I} V_i) | P\in P_n\}$
+décrit l'ensemble des formules du calcul propositionnel en forme causale à $n$
+inconnues. Soit $S\in S_n$ et $P\in P_n$ l'ensemble associé. On nomme ordre de
+$S$ l'ordre de la plus grande clause de la formule : $o(S) = \max_{I\in P} |I|$.
+
+\subsection{Problème SAT}
+Soit $n\in\mathbb{N}^*$. Soit $S\in S_n$. $S$ est dit \emph{satisfaisable} s'il
+existe des valeurs pour les inconnues telles que $S$ vale \emph{vrai} lorsqu'on
+évalue ses variables en les valeurs données.
+
+On nomme problème SAT le problème de savoir si un problème $S$ quelconque est
+satisfaisable. Le problème est décidable puisque qu'il suffit de tester toutes
+les valeurs possibles des inconnues pour voir si une convient. La complexité
+est alors exponentielle. L'objectif est de trouver des algorithmes plus
+efficaces. Le problème SAT est cependant $NP$-complet \cite{cook71}, donc
+sous l'hypothèse $P\neq NP$, il n'existe pas d'algorithme le résolvant dans le
+cas général en temps polynomial. On s'intéresse donc à des cas particuliers.
+
+On nomme problème $k$-SAT le problème de savoir si un problème $S$ d'ordre au
+plus $k$, $k\in\mathbb{N}^*$, est satisfaisable.
+
+\input{sat/3sat.tex}
+\input{sat/2sat.tex}
+

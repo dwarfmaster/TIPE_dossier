@@ -1,0 +1,95 @@
+\section{Problème 2-SAT}
+Le problème $2$-SAT est un cas particulier du problème SAT qui a l'avantage
+d'être résoluble en temps polynomial. \idee{Complexité exacte de l'algorithme}
+Nous présentons ici un algorithme permettant de résoudre tout problème $2$-SAT.
+
+\subsection{Algorithme de résolution}
+On crée $G$ le graphe orienté dont les nœuds sont les variables et leur
+négation (s'il y a $n$ variables, il y a donc $2n$ nœuds). On étudie chaque
+clause pour former les arrêtes. Le problème étant d'ordre au plus $2$, chaque
+clause est d'ordre au plus $2$. On crée les arrêtes de la façon suivante :
+\begin{itemize}
+ \item Pour chaque clause de la forme $x_i \vee x_j$, on ajoute les arrêtes
+       $\neg x_i \rightarrow x_j$ et $\neg x_j \rightarrow x_i$.
+ \item Pour chaque clause de la forme $x_i$, on la considère équivalente à
+       $x_i \vee x_i$, donc on ajoute $\neg x_i \rightarrow x_i$ au graphe (ce
+       qui revient à dire que $x_i$ doit être vrai).
+\end{itemize}
+
+On calcul les composantes fortement connexes du graphe ainsi déterminé. Ce
+calcul peut se faire linéairement en le nombre de noeuds plus le nombres
+d'arêtes de graphe en utilisant un algorithme comme l'algorithme de Tarjan. Il
+a en plus donne les composantes connexes triées topologiquement, ce qui
+peut être utile pour donner une solution explicite (voire la preuve pour
+les détails).
+
+Le problème est satisfaisable si et seulement si chaque variable est dans une
+composante connexe différente de sa négation.
+
+\subsection{Preuve}
+\subsubsection{Sens direct}
+On procède par la contraposée. On suppose qu'il existe une variable qui soit
+dans la même composante connexe que sa négation. On la note $x$. Le graphe
+étant un graphe d'implication, on a alors $x \equival \neg x$. $x$ ne peut
+vérifier cette condition, donc le problème n'est pas satisfaisable.
+
+\subsubsection{Sens réciproque}
+\tref{De qui vient l'idée de la démonstration}
+On suppose que tout $x$ est dans une composante fortement connexe différente de
+celle dans laquelle est $\neg x$. On va procéder à une preuve constructive, en
+donnant un algorithme qui donnera une solution au problème.
+
+Quelques notations d'abord. On note $G$ le graph orienté du problème, $S(G)$ le
+graphe de ses composantes fortement connexes, qui est nécessairement acyclique.
+De plus, on note $G^r$ le graphe orienté renversé et $\neg G$ le graph dont on
+prend la négation de chaque nœud. On peut étendre cette notation : $\neg S(G)$
+est le graphe dont on a pris la négation de chaque élément de chaque nœud.
+Enfin, on note $N(G)$ l'ensemble des nœuds du graphe et $E(G) \in N(G)^2$ les
+arrêtes.
+
+Quelques résultats préliminaires, rapides à démontrer :
+\demo{Résultat préliminaires de l'algorithme du $2$-SAT}
+\begin{itemize}
+ \item $\neg G^r = G$
+ \item $\neg S(G) = S(\neg G)$
+ \item $S(G)^r = S(G^r)$
+ \item On en déduit $\neg S(G)^r = S(G)$
+\end{itemize}
+
+L'objectif est de marquer chaque composante fortement connexe avec vrai ou faux
+de façon que si $x \rightarrow y$, alors $x$ faux ou $x$ et $y$ vrai. De plus,
+il faut que $x$ soit marqué vrai si et seulement si $\neg x$ est marqué faux.
+En applicant ces valeurs aux variables des composantes fortement connexes
+(ce qui est alors possible), on a une solution.
+\demo{Conditions pour que le coloriage de $S(G)$ soit solution}
+
+On note $(S_1,\ldots S_p)$ les composantes fortement connexes de $G$ triées par
+ordre topologique inverse :
+    \[ \forall (i,j)\in\seg{1}{p}^2, S_i \rightarrow S_j \implies j \leq i \]
+
+De plus, on a :
+    \[ \forall i\in\seg{1}{p}, \exists j\in\seg{1}{p}\backslash\{i\}: \neg S_i = S_j \]
+
+Le $i\neq j$ est lié à l'hypothèse de l'implication.
+
+On applique alors l'algorithme suivant : on parcourt les composantes fortement
+connexes dans l'ordre topologique inverse. Si la composante $x$ est déjà
+marquée, on passe. Sinon, on marque $S$ vraie et $\neg S$ fausse.
+
+À l'issu de cet algorithme, la condition $S$ marquée vraie si et seulement si
+$\neg S$ marquée fausse est immédiatement vérifiée. De plus, $S_i$ est marquée
+vraie si et seulement si $i < j$, avec $S_j = \neg S_i$ (marquée vraie
+seulement si elle est rencontrée avant sa négation).
+
+Supposons par l'absurde que l'on puisse trouve $(i,j)\in\seg{1}{p}^2$ tels que
+$S_i\rightarrow S_j$, $S_i$ marqué vrai et $S_j$ marqué faux. On a donc
+$j \neq i$. Notons aussi $(k,l)\in\seg{1}{p}^2$ tels que $S_k = \neg S_i$ et
+$S_l = \neg S_j$. On a alors $i < k$ et $l < j$ (*) d'après la remarque
+précédente. Comme $\neg S(G)^r = S(G)$, on a aussi $\neg S_j\rightarrow \neg S_i$,
+soit $S_l\rightarrow S_k$. Or les $(S_i)$ sont classés par ordre topologique
+inverse, d'où $k < l$ (**) et $j < i$ (***). Or (*) et (**) donnent $i < j$ :
+contradiction avec (***).
+
+Le marquage ainsi trouvé vérifie les conditions : il donne bien un solution,
+donc le problème admet en effet une solution.
+
