@@ -16,25 +16,26 @@ clause est d'ordre au plus $2$. On crée les arrêtes de la façon suivante :
        qui revient à dire que $x_i$ doit être vrai).
 \end{itemize}
 
-On calcul les composantes fortement connexes du graphe ainsi déterminé. Ce
+On calcule les composantes fortement connexes du graphe ainsi déterminé. Ce
 calcul peut se faire linéairement en le nombre de noeuds plus le nombres
 d'arêtes de graphe en utilisant un algorithme comme l'algorithme de Tarjan. Il
-a en plus donne les composantes connexes triées topologiquement, ce qui
-peut être utile pour donner une solution explicite (voire la preuve pour
-les détails).
+donne en plus les composantes connexes triées topologiquement, ce qui peut être
+utile pour donner une solution explicite (voire la preuve pour les détails).
 
 Le problème est satisfaisable si et seulement si chaque variable est dans une
 composante connexe différente de sa négation.
 
 \subsection{Preuve}
+L'idée sous-jacente de la preuve est que :
+\[ x_i\vee x_j \equiv (\neg x_i \implies x_j) \wedge (\neg x_j \implies x_i) \]
+
 \subsubsection{Sens direct}
 On procède par la contraposée. On suppose qu'il existe une variable qui soit
 dans la même composante connexe que sa négation. On la note $x$. Le graphe
-étant un graphe d'implication, on a alors $x \equival \neg x$. $x$ ne peut
+étant un graphe d'implication, on a alors $x \equiv \neg x$. $x$ ne peut
 vérifier cette condition, donc le problème n'est pas satisfaisable.
 
 \subsubsection{Sens réciproque}
-\tref{De qui vient l'idée de la démonstration}
 On suppose que tout $x$ est dans une composante fortement connexe différente de
 celle dans laquelle est $\neg x$. On va procéder à une preuve constructive, en
 donnant un algorithme qui donnera une solution au problème.
@@ -60,8 +61,8 @@ L'objectif est de marquer chaque composante fortement connexe avec vrai ou faux
 de façon que si $x \rightarrow y$, alors $x$ faux ou $x$ et $y$ vrai. De plus,
 il faut que $x$ soit marqué vrai si et seulement si $\neg x$ est marqué faux.
 En applicant ces valeurs aux variables des composantes fortement connexes
-(ce qui est alors possible), on a une solution.
-\demo{Conditions pour que le coloriage de $S(G)$ soit solution}
+(ce qui est alors possible), on a une solution d'après l'équivalence présentée
+en début de preuve.
 
 On note $(S_1,\ldots S_p)$ les composantes fortement connexes de $G$ triées par
 ordre topologique inverse :
@@ -84,12 +85,12 @@ seulement si elle est rencontrée avant sa négation).
 Supposons par l'absurde que l'on puisse trouve $(i,j)\in\seg{1}{p}^2$ tels que
 $S_i\rightarrow S_j$, $S_i$ marqué vrai et $S_j$ marqué faux. On a donc
 $j \neq i$. Notons aussi $(k,l)\in\seg{1}{p}^2$ tels que $S_k = \neg S_i$ et
-$S_l = \neg S_j$. On a alors $i < k$ et $l < j$ (*) d'après la remarque
+$S_l = \neg S_j$. On a alors $i < k$ et $l < j$ $(1)$ d'après la remarque
 précédente. Comme $\neg S(G)^r = S(G)$, on a aussi $\neg S_j\rightarrow \neg S_i$,
 soit $S_l\rightarrow S_k$. Or les $(S_i)$ sont classés par ordre topologique
-inverse, d'où $k < l$ (**) et $j < i$ (***). Or (*) et (**) donnent $i < j$ :
-contradiction avec (***).
+inverse, d'où $k < l$ $(2)$ et $j < i$ $(3)$. Or $(1)$ et $(2)$ donnent
+$i < j$ : contradiction avec $(3)$.
 
-Le marquage ainsi trouvé vérifie les conditions : il donne bien un solution,
+Le marquage ainsi trouvé vérifie les conditions : il donne bien une solution,
 donc le problème admet en effet une solution.
 
