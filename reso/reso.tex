@@ -1,0 +1,93 @@
+\section{Présentation}
+Un algorithme intuitif pour résoudre un problème SAT serait de calculer la
+table de vérité de la formule booléenne. On aurait donc une complexité
+exponentielle. Si c'est acceptable sur des nombres très restreints de
+variables, cela devient inacceptable dès que les problèmes commencent à
+grandir. \todo{Indiquer le nombre de variables dans la résolution du HIPP}
+
+Au vu du nombres d'utilisations de ce problèmes, un algorithme plus efficace
+est recherché. Cependant, le problème étant $NP$-complet, il est fort probable
+qu'une solution en temps polynomial dans le pire des cas n'existe pas.
+
+Afin de compenser cette limite, de nombreuses techniques ont été développée
+pour avoir des performances acceptables \todo{Une quantification des
+performances actuelles} sur des problème ayant des dizaines de milliers de
+variables et des millions de clauses.
+\idee{Étudier les solveurs non complets}
+
+Nous allons donc maintenant présenter un certain nombre des méthodes utilisées.
+\idee{Adapter les algorithmes pour une résolution accélérée du problème HIPP}
+
+\section{Techniques}
+\subsection{Simplifications}
+Afin de diminuer le nombre de clauses et le nombre de tests nécessaires,
+certaines simplifications peuvent être faite sur les clauses, en utilisant les
+règles suivantes : \begin{itemize}
+    \item Résolution :
+           $(x_1\vee\alpha) \wedge (\neg x_1\vee\beta) \equiv \alpha\vee\beta$
+    \item $x \vee x \equiv x$
+    \item $(\alpha\vee\beta)\wedge\alpha\equiv\alpha$
+    \item $x\vee\neg x \equiv \bot$
+\end{itemize}
+\demo{Équivalence ou cosatisfiabilité ?}
+
+Le premier algorithme utilisait uniquement la méthode de résolution : c'était
+l'algorithme de \emph{Davis and Putnam}. \tref{DP60} Cette algorithme
+consistait en la sélection d'une variable, à appliquer la résolution sur toute
+les paires de la forme $x\vee\alpha$ et $\neg x\vee\beta$, puis à supposer
+$x$ soit vrai soit faux (ce qui revient à supprimer les clauses contenant $x$
+ou celles contenant $\neg x$), puis à itérer jusqu'à obtenir la clause vide
+(valant $\bot$), ou la formule vide (valant $\top$). Si l'une des branches de
+calcul permet d'obtenir la formule vide, la formule est \texttt{SAT}, dans le
+cas contraire elle est \texttt{UNSAT}.
+
+Une autre simplification possible est celle de la \emph{variable pure}. Une
+variable est dite \emph{pure} si elle n'apparait que directement ou niée, mais
+jamais les deux. Auquel cas elle peut être supposée toujours vraie ou fausse,
+et permet de supprimer les clauses où elle intervient. Cette simplification
+ne préserve pas l'équivalence logique mais la satisfiabilité.
+
+\subsection{Backtracking}\label{back}
+Afin de réduire les coûts en mémoire, les algorithmes peuvent se faire de
+façon récursive, en choisissant une variable, faisant les simplifications qui
+s'imposent et en remontant d'un cran si le résultat est \texttt{UNSAT}. Cette
+méthode a été introduite par \emph{Davis}, \emph{Logemann} et \emph{Loveland}
+en 1962. \tref{DLL62}
+
+Lorsqu'un système d'apprentissage de clause est utilisé (cf \ref{cdcl}), plutôt
+que de remonter à chaque fois d'une niveau, il est préférable de remonter au
+plus bas niveau qui permette de rendre vraie la clause apprise. On parle alors
+de retour non chronologique ou \emph{Non-Chronological Backtracking}.
+
+\subsection{Apprentissage de clauses}\label{cdcl}
+Lorsqu'un conflit est atteint, il est possible de faire créer un nouvelle
+clause qui représente ce conflit. Cette clause est alors ajoutée à la liste
+des clauses, afin de faire apparaitre les conflits plus vite lors de
+l'exploration des autres branches. Cet ajout ne conserve pas l'équivalence
+mais la satisfiabilité.
+
+Cette méthode fait apparaitre la notion de \emph{point d'implication unique},
+qui sont des décisions de variables qui définissant complètement l'état actuel
+du système (autrement dit tous les autres choix de variables peuvent se déduire
+de cet \emph{UIP}). Lors de l'apprentissage d'une clause, on peut se limiter
+à l'implication directe du conflit ou remonter jusqu'à certains \emph{UIP}.
+
+\subsection{Heuristiques dans le choix de la variable}\label{decision}
+Dans le cas de formules non satisfiables, tout l'arbre de recherche sera
+exploré. Cependant, si la formule est satisfiable, on peut se demander s'il
+y a des variables qui sont plus propices de mener à une solution du problème.
+
+\idee{Détailler les heuristiques MOMS, JW, DLIS ...}
+
+\subsection{Redémarrages}\label{restart}
+En pratique, on constante que sur certaines instances, les algorithmes mettent
+un temps très important. C'est lié à un phénomène appelé \emph{Heavy tailed
+distribution}. \todo{Détailler le principe des Heavy Tailed Distributions}
+Ceci fait que dans certains cas, l'algorithme peut \emph{s'embourber} dans des
+sous-arbres de l'arbre de décision. Afin d'éviter ce problème, il est
+intéressant de recommencer l'exploration de l'arbre de zéros après un certain
+nombre de conflits (les clauses apprises sont cependant conservées).
+
+Une stratégie optimale dans le cas général a été mise au point, \tref{Luby 93}
+mais s'avère compliquer à utiliser en pratique.
+
