@@ -76,8 +76,45 @@ de cet \emph{UIP}). Lors de l'apprentissage d'une clause, on peut se limiter
 Dans le cas de formules non satisfiables, tout l'arbre de recherche sera
 exploré. Cependant, si la formule est satisfiable, on peut se demander s'il
 y a des variables qui sont plus propices de mener à une solution du problème.
+\idee{Trouver une heuristique adaptée pour HIPP}
 
-\idee{Détailler les heuristiques MOMS, JW, DLIS ...}
+Une des heuristiques les plus efficaces est \emph{VSIDS} pour \emph{Variable
+State Independent Decaying Sum}. Ce terme décrit plus précisément une famille
+d'heuristiques. L'idée est d'associer à chaque variable un score nommé
+\emph{activité}, initialisé à $0$. Chaque fois qu'une clause est apprise,
+un ensemble de variables est choisit et leur activité est augmenté d'une
+certaine grandeur appelé le \emph{additive bump}, usuellement 1. Enfin, tout
+les $i$ conflits ($i=1$ pour les implémentations modernes tels \emph{miniSAT}),
+le score de toutes les variables est multiplié par une grandeur
+$0 < \alpha < 1$ appelée \emph{multiplicative decay}. Lorsqu'une variable doit
+être choisie, c'est celle avec le plus grand score qui est sélectionnée.
+
+Une autre heuristique, par exemple implémentée dans \emph{Grasp}, est
+\emph{DLIS} pour \emph{Dynamic Largest Individual Sum}. Pour chaque variable
+$x$ on associe deux grandeurs : $C_{x,p}$ le nombre de clauses non résolues
+dans lesquelles $x$ apparait positivement et $C_{x,n}$ le nombre de clauses non
+résolues où $x$ apparait négativement. Lors du branchage, on considère $x$ la
+variable telle que $C_{x,p}$ soit maximal et $y$ telle que $C_{y,n}$ soit
+maximal. Si $C_{x,p} > C_{y,n}$, on assigne $x$ à vrai, sinon on assigne $y$ à
+faux.
+
+La méthode \emph{JW} pour \emph{Jeroslow-Wang} consiste à attribuer à chaque
+variable un poids qui dépend des longueurs des clauses dans lesquelles elle
+intervient, puis de sélectionner celles de poids maximal, afin de favoriser
+les variables qui sont dans des clauses courtes. Pour $l$ une variable, en
+notant $\phi$ l'ensemble des clauses non résolues, le poids attribué est :
+$J(l) = \sum_{l\in\omega,\omega\in\phi} 2^{-|\omega|}$
+
+L'heuristique \emph{MOM} pour {Maximum Occurrence of clauses of Minimum size}
+se base sur la même idée de favoriser les variables intervenant dans des
+clauses de petite taille, avec en plus une tendance vers les variables qui
+sont présente autant négativement que positivement. Notons $f^*(x)$ le nombre
+de clauses de taille minimale contenant le littéral $x$, on sélectionne le $x$
+pour lequel la grandeur $((f^*(x) + f^*(\neg x)) * 2^k + f^*(x)*f^*(\neg x)$
+est maximale, avec $k$ un entier.
+
+Ces heuristiques sont décrites dans la présentation \tref{sat\_cmu}.
+\emph{VSIDS} semble être l'heuristique la plus efficace en pratique \tref{vg2015}.
 
 \subsection{Redémarrages}\label{restart}
 En pratique, on constante que sur certaines instances, les algorithmes mettent
