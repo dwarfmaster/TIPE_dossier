@@ -32,7 +32,7 @@ règles suivantes : \begin{itemize}
 \demo{Équivalence ou cosatisfiabilité ?}
 
 Le premier algorithme utilisait uniquement la méthode de résolution : c'était
-l'algorithme de \emph{Davis and Putnam}. \tref{DP60} Cette algorithme
+l'algorithme de \emph{Davis-Putnam}\cite{dp60}. Cet algorithme
 consistait en la sélection d'une variable, à appliquer la résolution sur toute
 les paires de la forme $x\vee\alpha$ et $\neg x\vee\beta$, puis à supposer
 $x$ soit vrai soit faux (ce qui revient à supprimer les clauses contenant $x$
@@ -52,7 +52,7 @@ Afin de réduire les coûts en mémoire, les algorithmes peuvent se faire de
 façon récursive, en choisissant une variable, faisant les simplifications qui
 s'imposent et en remontant d'un cran si le résultat est \texttt{UNSAT}. Cette
 méthode a été introduite par \emph{Davis}, \emph{Logemann} et \emph{Loveland}
-en 1962. \tref{DLL62}
+en 1962\cite{dll62}.
 
 Lorsqu'un système d'apprentissage de clause est utilisé (cf \ref{cdcl}), plutôt
 que de remonter à chaque fois d'une niveau, il est préférable de remonter au
@@ -113,8 +113,8 @@ de clauses de taille minimale contenant le littéral $x$, on sélectionne le $x$
 pour lequel la grandeur $((f^*(x) + f^*(\neg x)) * 2^k + f^*(x)*f^*(\neg x)$
 est maximale, avec $k$ un entier.
 
-Ces heuristiques sont décrites dans la présentation \tref{sat\_cmu}.
-\emph{VSIDS} semble être l'heuristique la plus efficace en pratique \tref{vg2015}.
+Ces heuristiques sont décrites dans la présentation \cite{heuriSAT}.
+\emph{VSIDS} semble être l'heuristique la plus efficace en pratique\cite{VSIDS}.
 
 \subsection{Redémarrages}\label{restart}
 En pratique, on constante que sur certaines instances, les algorithmes mettent
@@ -125,6 +125,6 @@ sous-arbres de l'arbre de décision. Afin d'éviter ce problème, il est
 intéressant de recommencer l'exploration de l'arbre de zéros après un certain
 nombre de conflits (les clauses apprises sont cependant conservées).
 
-Une stratégie optimale dans le cas général a été mise au point, \tref{Luby 93}
+Une stratégie optimale dans le cas général a été mise au point\cite{luby93},
 mais s'avère compliquer à utiliser en pratique.
 
