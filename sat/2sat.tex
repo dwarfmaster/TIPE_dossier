@@ -48,14 +48,16 @@ est le graphe dont on a pris la négation de chaque élément de chaque nœud.
 Enfin, on note $N(G)$ l'ensemble des nœuds du graphe et $E(G) \in N(G)^2$ les
 arrêtes.
 
-Quelques résultats préliminaires, rapides à démontrer :
-\demo{Résultat préliminaires de l'algorithme du $2$-SAT}
-\begin{itemize}
- \item $\neg G^r = G$
- \item $\neg S(G) = S(\neg G)$
- \item $S(G)^r = S(G^r)$
- \item On en déduit $\neg S(G)^r = S(G)$
-\end{itemize}
+On a immédiatement $\neg S(G) = S(\neg G)$ et $S(G)^r = S(G^r)$.
+
+Montrons de plus que $\neg G^r = G$. On a par définition $N(\neg G^r) = N(G)$.
+Soit $a \rightarrow b \in \neg G^r$. Par définition, on a $\neg b \rightarrow
+\neg a \in G$. Par construction du graphe, on a alors $a \rightarrow b \in G$.
+Donc $E(\neg G^r) \subset E(G)$. Soit maintenant $a \rightarrow b \in G$. Par
+construction, $\neg b \rightarrow \neg a \in G$ donc $a \rightarrow b \in \neg
+G^r$. D'où $E(g)\subset E(\neg G^r)$.
+
+On peut alors en déduire $\neg S(G)^r = S(G)$.
 
 L'objectif est de marquer chaque composante fortement connexe avec vrai ou faux
 de façon que si $x \rightarrow y$, alors $x$ faux ou $x$ et $y$ vrai. De plus,
