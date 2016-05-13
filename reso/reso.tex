@@ -72,6 +72,68 @@ du système (autrement dit tous les autres choix de variables peuvent se déduir
 de cet \emph{UIP}). Lors de l'apprentissage d'une clause, on peut se limiter
 à l'implication directe du conflit ou remonter jusqu'à certains \emph{UIP}.
 
+Représente l'espace de recherche par un arbre :
+\begin{center}
+\includegraphics[width=0.8\linewidth]{reso/plain.pdf}
+\end{center}
+
+Lorsqu'on obtient une contradiction (racine de l'arbre rouge de la figure
+suivante), on peut identifier précisément quelles ont été les décisions qui ont
+mené à cette contradiction (branches en bleu) :
+\begin{center}
+\includegraphics[width=0.8\linewidth]{reso/error.pdf}
+\end{center}
+
+On peut alors éliminer de l'espace de recherche tous les sous-arbres vérifiant
+la même condition (en rouge sur l'arbre suivant) :
+\begin{center}
+\includegraphics[width=0.8\linewidth]{reso/eliminated.pdf}
+\end{center}
+
+En pratique, on élimine ces parties en ajoutant une clause qui représente
+l'erreur.
+
+Pour déterminer cette clause, on considère la clause $c$ dont tous les litéraux
+sont faux. Pour chaque litéral faux $x$ de cette clause, soit on ajoute $x$ à
+la clause apprise, soit on applique le même raisonnement à la clause qui a
+propagée $x$ si $x$ n'a pas été fixé. Pour remonter au premier UIP, il faut
+continuer à remonter jusqu'à ce que la clause apprise ne contienne que des
+variables fixées.
+
+Afin de bien comprendre, considérons le problème SAT :
+\[ (h\vee\neg b) \wedge (e\vee\neg h\vee\neg c)
+   \wedge (\neg g\vee\neg d\vee\neg c) \wedge (a\vee\neg h\vee d)
+   \wedge (a\vee\neg d\vee\neg e\vee g)\]
+
+Supposons que l'on fixe $a$ à faux, $b$ à vrai et $c$ à vrai. Lorsqu'on fixe
+$b$ à vrai, la clause 1 fixe $h$ à vrai, donc la clause 4 fixe $d$ à vrai.
+Puis, en fixant $c$ à vrai, on obtient $e$ vrai d'après la clause 2 et $g$
+faux d'après la clause 3. On a alors un conflit, puisque la clause 5 est alors
+fausse. En appliquant la méthode précédente, on obtient alors le graphe
+suivant (en rouge la litéraux faux, en vert ceux vrai et en bleu ce qui sont
+décidés) :
+\begin{center}
+\includegraphics[width=0.5\linewidth]{reso/graph.pdf}
+\end{center}
+
+En remontant à la première UIP, la clause alors apprise est
+$a\vee\neg b\vee\neg c$. On peut ici prouver que cette clause peut se déduire
+du problème (et donc que son ajout ne change rien à la satisfiabilité du
+problème) en utilisant la résolution :
+\begin{align*}
+    (a\vee\neg d\vee\neg e\vee {\color{green}g})
+    \wedge({\color{green}\neg g}\vee\neg d\vee\neg c)
+        &\implies a\vee\neg d\vee\neg e\vee\neg c \\
+    (a\vee{\color{green}\neg d}\vee\neg e\vee\neg c)
+    \wedge(a\vee\neg h\vee{\color{green} d})
+        &\implies a\vee\neg e\vee\neg c\vee\neg h \\
+    (e\vee{\color{green}\neg e}\vee\neg c\vee\neg h)
+    \wedge({\color{green}e}\vee\neg h\vee\neg c)
+        &\implies a\vee\neg c\vee\neg h \\
+    (a\vee\neg c\vee{\color{green}\neg h})\wedge({\color{green} h}\vee\neg b)
+        &\implies a\vee\neg b\vee\neg c\\
+\end{align*}
+
 \subsection{Heuristiques dans le choix de la variable}\label{decision}
 Dans le cas de formules non satisfiables, tout l'arbre de recherche sera
 exploré. Cependant, si la formule est satisfiable, on peut se demander s'il

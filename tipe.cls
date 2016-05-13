@@ -48,6 +48,10 @@
     bookmarksopen = true
 }
 
+% Diagrammes
+\RequirePackage{graphicx}
+\RequirePackage{xcolor}
+
 % Nouvelle commandes
 % Équivalence
 \newcommand{\equival}{\Leftrightarrow}
