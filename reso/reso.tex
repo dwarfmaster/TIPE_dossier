@@ -95,9 +95,10 @@ l'erreur.
 Pour déterminer cette clause, on considère la clause $c$ dont tous les litéraux
 sont faux. Pour chaque litéral faux $x$ de cette clause, soit on ajoute $x$ à
 la clause apprise, soit on applique le même raisonnement à la clause qui a
-propagée $x$ si $x$ n'a pas été fixé. Pour remonter au premier UIP, il faut
+propagée $x$ si $x$ n'a pas été fixé. Pour remonter au derniers UIP, il faut
 continuer à remonter jusqu'à ce que la clause apprise ne contienne que des
-variables fixées.
+variables fixées. Il est intéressant de choisir quand s'arrêter précisément
+afin d'avoir une clause apprise minimale.
 
 Afin de bien comprendre, considérons le problème SAT :
 \[ (h\vee\neg b) \wedge (e\vee\neg h\vee\neg c)
@@ -133,10 +134,15 @@ problème) en utilisant la résolution :
         &\implies a\vee\neg b\vee\neg c\\
 \end{align*}
 
+De plus, afin de limiter le nombre total de clauses, il peut être intéressant
+de supprimer certaines clauses apprises régulièrement.
+
 \subsection{Heuristiques dans le choix de la variable}\label{decision}
 Dans le cas de formules non satisfiables, tout l'arbre de recherche sera
 exploré. Cependant, si la formule est satisfiable, on peut se demander s'il
 y a des variables qui sont plus propices de mener à une solution du problème.
+Notons que dans les heuristiques proposées ci-dessous, certaines choisissent
+aussi la valeur de la variable.
 \idee{Trouver une heuristique adaptée pour HIPP}
 
 Une des heuristiques les plus efficaces est \emph{VSIDS} pour \emph{Variable
@@ -179,15 +185,56 @@ Ces heuristiques sont décrites dans la présentation \cite{heuriSAT}.
 
 \subsection{Redémarrages}\label{restart}
 En pratique, on constante que sur certaines instances, les algorithmes mettent
-un temps très important. C'est lié à un phénomène appelé \emph{Heavy tailed
-distribution}. \todo{Détailler le principe des Heavy Tailed Distributions}
-Ceci fait que dans certains cas, l'algorithme peut \emph{s'embourber} dans des
-sous-arbres de l'arbre de décision. Afin d'éviter ce problème, il est
+un temps très important. Ceci est du au fait que dans certains cas,
+l'algorithme peut s'embourber dans des sous-arbres de l'arbre de décision qui
+ont des temps de traitement élevés.. Afin d'éviter ce problème, il est
 intéressant de recommencer l'exploration de l'arbre de zéros après un certain
-nombre de conflits (les clauses apprises sont cependant conservées).
+nombre de conflits (les clauses apprises sont cependant conservées). En
+pratique, on constate de fortes accélérations sur les problèmes SAT, c'est
+donc particulièrement intéressant si l'on sait d'avance que le problème est
+SAT. Afin de pouvoir obtenir la réponse UNSAT, il faut que la stratégie
+diverge pour pouvoir permettre un traitement complet de l'arbre.
 
-Une stratégie optimale dans le cas général a été mise au point\cite{luby93},
-mais s'avère compliquer à utiliser en pratique.
+Une stratégie $(t_n)_{n\in\mathbb{N}^*}\in(\mathbb{N}^*)^{\mathbb{N}^*}$ est
+une suite d'entiers. L'algorithme va s'exécuter $t_1$ fois, puis recommencer de
+zéro, en gardant cependant les clauses acquises, puis s'exécute $t_2$ et ainsi
+de suite jusqu'à ce que le l'algorithme retourne SAT ou UNSAT. Une stratégie
+optimale dans le cas général a été mise au point\cite{luby93}, de la forme
+$(t^*)_{n\in\mathbb{N}^*}$, mais elle demande une connaissance précise
+préalable de donnée non accessibles, et ne peut donc être mise en pratique.
 
-\todo{Détailler les différentes stratégies (cf hwsat09)}.
+Quelques unes des stratégies usuelles sont\cite{restarts} :
+\begin{itemize}
+    \item \textit{Stratégie fixée} : on effectue un restart tout le $n$
+        conflits, $n$ étant fixé préalablement. Des exemples de valeurs pour
+        $n$ utilisées en pratique sont $n=550$ dans \texttt{Berkmin} et
+        $n=16000$ dans \texttt{Seige}
+    \item \textit{Stratégie géométrique} : à partir d'une taille initialle fixée,
+        le nombre de conflits entre redémarrages croit géométriquement. Par
+        exemple, \texttt{MiniSat v1.14} utilisait cette stratégie avec une
+        valeur de départ de $100$ et un facteur de $1.5$. Il a été montré que
+        dans le pire des cas, l'écart par rapport à la stratégie optimale
+        n'est pas majoré.
+    \item \textit{Stratégie de Luby} : on utilise comme stratégie un multiple
+        entier de la suite de Luby. La suite de Luby est :
+        \[ \forall i\in\mathbb{N}^*,t_i = \left\{\begin{array}{cl}
+            2^{k-1} & \text{if } i = 2^k-1 \\
+            t_{i-2^{k-1}+1} & \text{if } 2^{k-1} \leq i < 2^k - 1 \\
+        \end{array}\right. \]
+        Il a été montré que cette stratégie est dans le pire des cas écartée
+        d'un facteur logarithmique de la stratégie optimale (résultat qui
+        ne s'applique pas directement à un algorithme CDCL). Cette stratégie a
+        par exemple été utilisée par \texttt{MiniSat2.1} ou encore
+        \texttt{TiniSat}.
+    \item \textit{Nested Restart strategy} : la longueur des redémarrage croît
+        géométriquement jusqu'à une certaine borne, auquel cas elle repart de
+        la valeur initial est la borne est augmentée géométriquement. Cette
+        stratégie, utilisée par exemple par \texttt{PicoSat} et
+        \texttt{Barcelogic}, peut être vue comme une version simplifiée de la
+        stratégie de Luby.
+\end{itemize}
+
+Il a été constaté en pratique qu'aucune stratégie ne domine les autres dans le
+cas général, et que chacune peut être avantageuse sur des instances
+particulières.
 
