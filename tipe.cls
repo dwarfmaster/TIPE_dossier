@@ -47,10 +47,12 @@
     linkcolor     = red,
     bookmarksopen = true
 }
-
-% Diagrammes
 \RequirePackage{graphicx}
 \RequirePackage{xcolor}
+\RequirePackage{listings}
+\lstset{ language=Haskell
+       , numbers=left
+       }
 
 % Nouvelle commandes
 % Équivalence

@@ -1,0 +1,506 @@
+\section{Généralités}
+Afin d'étudier les techniques de résolution plus en détail, nous proposons une
+implémentation d'un solveur utilisant les techniques suivantes :
+\begin{itemize}
+    \item Apprentissage de clause en remontant à la dernière \emph{UIP}.
+    \item Heuristique VSIDS dans le chois de la variable.
+    \item Redémarrages suivant la stratégie luby32, et la possibilité de
+        changer de stratégie simplement.
+    \item Retour non chronologique.
+\end{itemize}
+
+Notons que les techniques suivantes n'ont pas été implémentées par manque de
+temps :
+\begin{itemize}
+    \item \emph{Phase-saving}, le fait de retenir la précédente assignation
+        d'un littéral dans le chois de la valeur.
+    \item Oubli de clauses pour éviter un agrandissement trop important du
+        nombre de clauses.
+    \item Minimisation de la clause apprise.
+\end{itemize}
+
+L'objectif de cette partie est de regarder en détail les procédures principales
+afin de les prouver et d'estimer leur complexité.
+
+Le programme est disponible à l'adresse suivante :
+\url{https://github.com/lucas8/cdcl\_sat\_solver}
+
+Il est implémenté en Haskell et dispose des modules suivants :
+\begin{itemize}
+    \item \texttt{Main} : trois implémentations de ce module sont proposées.
+        \begin{enumerate}
+                \item un module disposant d'une fonction main lisant le
+                    problème cnf au format \emph{DIMACS} dont le chemin est
+                    passé en premier argument de l'exécutable.
+                \item un module testant le programmes sur tous les problèmes
+                    du module \texttt{SAT.Problems} à l'aides du module
+                    \texttt{HUnit}
+                \item un module mesurant les temps d'exécution de l'algorithme
+                    sur les instances du module \texttt{SAT.Problems} à l'aide
+                    du module \texttt{Criterion}.
+        \end{enumerate}
+    \item \texttt{SAT.Problems} : contient deux tableaux de chemins vers des
+        problèmes satisfiables et insatisfiables.
+    \item \texttt{SAT.Structures} : définit les types \texttt{Literal},
+        \texttt{Clause} et \texttt{CNF} utilisés dans le reste du programme.
+    \item \texttt{SAT.Status} : définit la structure \texttt{Status} stockant
+        l'état du système à un moment de sa résolution, ainsi qu'une interface
+        pour implémenter des heuristiques dans le chois de la variable sous
+        la class \texttt{Chooser}.
+    \item \texttt{SAT.Loader} : implémente un parseur du format de fichier
+        \emph{DIMACS} basique (ne supporte pas toutes les variations
+        possibles de ce format).
+    \item \texttt{SAT.Chooser} : implémente plusieurs heuristiques de chois
+        de variable, une simple qui sélectionne les variables dans l'ordre
+        et VSIDS.
+    \item \texttt{SAT.Solver} : implémente l'algorithme de résolution.
+\end{itemize}
+
+Nous nous intéresserons uniquement aux modules \texttt{SAT.Structures} et
+\texttt{SAT.Solver}. Nous ne regarderons pas l'implémentation de VSIDS et nous
+dans les analyse de complexité nous supposerons le chois en temps constant.
+
+\section{Les structures de données}
+\subsection{Le problème en $CNF$}
+Un littéral est définit de la manière suivante :
+\begin{lstlisting}
+data Literal = L Int
+\end{lstlisting}
+
+Les variables correspondent à la valeur absolue de l'entier stocké et la
+négation correspond au fait d'avoir une valeur négative. L'intérêt d'avoir un
+type complet plutôt qu'un alias vers le type \texttt{Int} est de définir
+des instances spéciales de \texttt{Eq}, \texttt{Ord} et \texttt{Ix} qui
+utilisent la valeur absolue.
+
+De cette façon, on a :
+\begin{lstlisting}
+(L (-1)) == (L 1) === True
+range (L 1, L (-3)) == [L 1, L 2, L 3]
+(L 2) <= (L (-3)) === True
+\end{lstlisting}
+
+À partir de là, un clause est une liste de littéraux et un problème une liste
+de clauses :
+\begin{lstlisting}
+type Clause = [Literal]
+type CNF = [Clause]
+\end{lstlisting}
+
+Afin de gérer les situation où une variable est libre, on définit le type
+suivant permettant de stocker un booléen ou rien :
+\begin{lstlisting}
+type MBool = Maybe Bool
+\end{lstlisting}
+
+\subsubsection{Opérations}
+On définit de plus quelques opérations sur ces types. On n'entrera pas dans les
+détails de ces opérations, qui sont pour la plupart immédiates.
+
+Tout d'abord, on a :
+\begin{lstlisting}
+neg :: Literal -> Literal
+sgn :: Literal -> Bool
+\end{lstlisting}
+
+Le sens de \texttt{neg} est évident, et \texttt{sgn} indique si le littéral
+est niée ou pas (renvoie \texttt{False} si le littéral est niée, \texttt{True}
+sinon).
+
+Puis une opération qui indique la valeur du littéral si la variable est liée
+au booléen passé en deuxième argument :
+\begin{lstlisting}
+mult :: Literal -> MBool -> MBool
+\end{lstlisting}
+
+\subsection{Le Monad \texttt{MdSt}}
+Afin de gérer l'apprentissage des clauses et les différentes variations d'état,
+tous les calculs se font à l'intérieur du monad \texttt{MdSt}. Nous n'entrerons
+pas dans les détails de son implémentation, mais on peut considérer que c'est
+un monad \texttt{State} stockant un \texttt{Status}. Il ne sera manipulé que
+par les opérations décrites dans cette partie, dont l'implémentation ne sera
+pas étudiée. Il prend un type en paramètre qui doit être un type possédant une
+interface \texttt{Chooser}.
+
+\subsubsection{Chois de la variable}
+\begin{lstlisting}
+init_chooser :: Chooser a => MdSt a ()
+choose :: Chooser a => MdSt a (Maybe Literal)
+\end{lstlisting}
+\texttt{init\_chooser} permet juste à l'heuristique de faire des calculs
+préliminaires nécessaires. \texttt{choose} sélectionne une variable et une
+valeur et retourne le littéral associé.
+
+\subsubsection{Gestion du problème}
+Les fonctions suivantes sont gérées :
+\begin{lstlisting}
+sat_get :: MdSt a CNF
+sat_set :: CNF -> MdSt a ()
+sat_add_clause :: Chooser a => Clause -> MdSt a ()
+is_new :: Literal -> MdSt a Bool
+clear_new :: MdSt a ()
+\end{lstlisting}
+
+Si le deux premières fonctions sont explicites, les trois autres méritent
+quelques explications.
+
+\texttt{sat\_add\_clause} ajoute une nouvelle clause $c$ au système, la marque
+comme étant la dernière clause ajoutée et met à jour le système de sélection
+de variable (d'où la nécessité de l'instance \texttt{Chooser}).
+
+\texttt{is\_new} indique si le littéral considéré fait partie de la dernière
+clause apprise. S'il n'y a aucune clause marquée comme telle, renvoie
+\texttt{True} (la raison de ce chois apparaitra lors de l'étude de la fonction
+\texttt{cdcl}).
+
+Enfin, \texttt{clear\_new} supprime le marquage sur la dernière clause apprise.
+
+\subsubsection{Redémarrages}
+La gestion est plutôt simple :
+\begin{lstlisting}
+setre :: Int -> MdSt a ()
+dec_restart :: MdSt a ()
+should_restart :: MdSt a Bool
+\end{lstlisting}
+
+\texttt{setre} initialise un compteur qui va être décrémenté à chaque appel à
+\texttt{dec\_restart} jusqu'à atteindre $0$. \texttt{should\_restart} va alors
+retourner \texttt{True} si le décompte a atteint $0$.
+
+\subsubsection{Erreurs}
+Quand une erreur est détectée, le monad permet de la signaler et de la
+remonter. Notons de plus qu'une erreur ne peut être causée que par une clause
+dont tous les littéraux sont faux, donc le système d'erreur doit permettre
+de récupérer cette clause. Les fonctions disponibles sont :
+\begin{lstlisting}
+is_error :: MdSt a Bool
+launch_error :: Clause -> MdSt a ()
+clear_error :: MdSt a ()
+get_error :: MdSt a (Maybe Clause)
+\end{lstlisting}
+
+\subsubsection{Fixage des valeurs}
+La commande de base pour fixé une valeur à une variable est la suivante :
+\begin{lstlisting}
+bind :: Literal -> Clause -> MdSt a ()
+\end{lstlisting}
+
+Le signe du littéral indique la valeur à laquelle fixée la variable :
+\texttt{bind (L (-3)) []} fixe la variable $3$ à \texttt{False} par exemple.
+
+La présence du deuxième argument permet de signaler la source de cette
+décision. Et effet, pour un apprentissage de clause efficace, il est nécessaire
+de se rappeler quelle clause a imposée la valeur. Pour signaler que la
+décision est arbitraire, on passe en argument la clause vide \texttt{[]}.
+
+Notons de plus que \texttt{bind} va signaler une erreur si le littéral est
+déjà lié à une valeur différente, et signale la clause source comme cause de
+l'erreur.
+
+Afin d'accéder à la valeur d'un littéral précédemment lié, on dispose de la
+fonction suivante :
+\begin{lstlisting}
+status :: Literal -> MdSt a MBool
+\end{lstlisting}
+
+Notons que la fonction retourne la valeur d'un littéral, donc si la variable
+$3$ est liée à \texttt{True}, on aura \texttt{status (L (-3)) == False}, par
+exemple.
+
+Afin de gérer les décisions des variables, le monad implémente aussi un système
+qui permet de stocker les littéraux à fixer et de les récupérer. On note ici
+aussi la présence d'un mécanisme permettant de stocker les clauses :
+\begin{lstlisting}
+tobnd_get :: MdSt a (Maybe (Literal,Clause))
+tobnd_peek :: MdSt a (Maybe (Literal,Clause))
+tobnd_add :: Literal -> clause -> MdSt a ()
+clear_tobnd :: MdSt a ()
+\end{lstlisting}
+
+Les fonctions sont plutôt explicites. Notons que \texttt{tobnd\_peek} se
+contente de retourner le suivant sans le supprimer, au contraire de
+\texttt{tobnd\_get}.
+
+Enfin, afin de gérer le backtracking, un système est fournit pour permettre de
+revenir à un état précédent des valeurs, en stockant les différents état dans 
+une pile, avec les opérations suivantes :
+\begin{lstlisting}
+push :: MdSt a ()
+pop :: MdSt a ()
+collapse :: MdSt a ()
+clear_vars :: MdSt a ()
+\end{lstlisting}
+
+\texttt{collapse} supprime le deuxième élément de la pile. Cela permet
+d'écraser la pile en gardant les dernières valeurs choisies, mais supprime la
+possibilité de revenir en arrière.
+
+\section{Les opérations}
+Afin de simplifier l'écriture du programme, plusieurs fonctions ont été
+écrites.
+
+La première prend en argument une fonction $f$ retournant un booléen et une
+liste $l$, et renvoie la liste contenant les mêmes éléments que $l$ ayant en
+première position le premier élément $e$ de $l$ tel que $f e$ soit vrai. Si $f$
+n'accepte aucun élément de $l$, la fonction retourne $l$ inchangée. Cette
+fonction est définie de la façon suivante :
+\begin{lstlisting}
+raise_on :: (a -> MdSt b Bool) -> [a] -> MdSt b [a]
+\end{lstlisting}
+
+On note que $f$ dépend du monad \texttt{MdSt}, et donc peut accéder à l'état
+du système (par exemple les valeurs des littéraux).
+
+De plus, cette fonction est linéaire en la position du premier élément validé
+par $f$, donc si le premier élément de $l$ est validé par $f$, la fonction est
+en temps constant (et en $|l|$ dans le pire des cas).
+
+De plus, trois opérations de contrôle ont été implémentées :
+\begin{lstlisting}
+tryuntil :: (c -> MdSt b Bool) -> (a -> MdSt b c) -> [a] -> MdSt b c
+formap :: (a -> MdSt b c) -> [a] -> MdSt b [c]
+while :: (MdSt a Bool) -> MdSt a () -> MdSt a ()
+\end{lstlisting}
+
+\texttt{formap} n'est qu'une version monadique de \texttt{map} et
+\texttt{while} fonctionne comme on pourrait s'y attendre.
+
+\texttt{try\_until} prend en argument deux fonctions $f$ et $g$ et une liste
+$l$. Elle va exécuter $g$ sur les éléments de $l$ jusqu'à ce que $f$ (qui
+dépend de l'état du système et de la valeur de retour de $g$) renvoit
+vraie, auquel cas la procédure termine et renvoie la dernière valeur
+renvoyée par $g$.
+
+\section{L'algorithme}
+On va maintenant pouvoir s'intéresser à l'algorithme principal, qui s'appuie
+sur les fonctions définies précédemment. Cet algorithme est découpé en cinq
+fonctions principales.
+
+\subsection{L'apprentissage de clause}
+On suppose disponible dans cette fonction les constantes suivantes :
+\begin{itemize}
+    \item \texttt{n} un littéral correspondant à la dernière variable.
+    \item \texttt{bnd} un tableau indicé par les litéraux qui indique à chaque
+        litéral la clause qui l'a impliqué.
+\end{itemize}
+
+Afin de pouvoir implémenter l'algorithme décrit en \ref{cdcl}, la procédure
+prend place dans le monad \emph{ST} :
+\begin{lstlisting}
+runST $ do
+    arr <- SA.newArray (L 1,n) False :: ST s (SA.STArray s Literal Bool)
+    q <- newSTRef S.empty
+    r <- newSTRef []
+    sequence_ $ map (\x -> modifySTRef' q (x <|)) c
+    whileM_ ((fmap (not . null) . readSTRef) q) $ do
+        qr <- readSTRef q
+        let qt:>l = S.viewr qr
+        writeSTRef q qt
+        b <- SA.readArray arr l
+        if b then return ()
+        else do
+            SA.writeArray arr l True
+            let bd = bnd ! l
+            if not (null bd)
+                then sequence_ $ map (\x -> modifySTRef' q (x <|)) bd
+                else modifySTRef' r (\x -> l : x)
+    readSTRef r
+\end{lstlisting}
+
+\texttt{SA} est le namespace du module \texttt{STArray} et \texttt{S} est le
+namespace du module \texttt{Data.Sequence}, qui offre un implémentation
+efficace des queues. Ce programme est simplement un parcours en largeur du
+graphe obtenu en liant chaque littéral à tous les autres littéraux de la clause
+qui l'a impliqué. Les différents \emph{UIP} correspondent aux différentes
+distances des littéraux dans ce graphe. En ne s'arrêtant que sur les variables
+de décisions, on remonte au dernier \emph{UIP}.
+
+\demo{Prouver la validité de l'algorithme de clause learning}
+
+\subsection{L'algorithme \emph{two-watch} sur une clause}
+Cette algorithme reçoit en argument une clause et retourne une clause égale au
+sens logique, mais dont les littéraux ont étés permuté afin de garantir que
+soit l'un des deux premiers littéraux est vrai, soit les deux sont
+indéterminés. Si cette invariant ne peut pas être vérifié, la procédure signale
+une erreur si tous les littéraux sont faux et indique qu'il faut lier le
+dernier littéral indéterminé sinon.
+
+L'implémentation est la suivante :
+\begin{lstlisting}
+two_watch :: Clause -> MdSt a Clause
+two_watch []     = return []
+two_watch (h:[]) =
+    do b <- status h
+       if b == Just False then launch_error [h]
+       else if b == Nothing then tobnd_add h [h]
+       else return ()
+       return [h]
+two_watch c =
+    do nc <- do (h:t) <- raise_on r $ c
+                t2 <- raise_on r t
+                return $ h : t2
+       let l1:l2:_ = nc
+       s1 <- status l1
+       s2 <- status l2
+       if s1 == Just False then launch_error c
+       else if s2 == Just False && s1 == Nothing then tobnd_add l1 c
+       else return ()
+       return nc
+ where r l = do b <- status l
+                return $ b /= (Just False)
+\end{lstlisting}%stopzone
+
+Si la clause ne contient qu'un littéral, soit on signale une erreur s'il est
+faut, soit on le fixe à vrai (s'il ne l'est pas déjà).
+
+Si une clause contient au moins deux littéraux, on utilise \texttt{raise\_on}
+pour garantir l'invariant : c'est les lignes 10 à 12. Si suite à ça le premier
+littéral est faux, c'est qu'ils le sont tous : on lance une erreur basée, bien
+évidemment causée par cette clause. Sinon, si le premier littéral n'est pas
+fixé mais que le deuxième est faux, cela signifie qu'ils sont tous faux sauf
+le premier, qui doit alors obligatoirement être fixé à vrai.
+\idee{Détailler la complexité de \texttt{two\_watch} dans différents cas}
+
+Enfin, on retourne la nouvelle clause.
+
+\subsection{La propagation d'une valeur}
+Cette fonction va propager des valeurs à fixer en appliquant
+\texttt{two\_watch} à toutes les clauses tant qu'il y a encore des variables à
+fixer :
+\begin{lstlisting}
+two_watch_all :: MdSt a ()
+two_watch_all = do
+    while test $ do
+        tb <- tobnd_get
+        let (l,c) = fromJust tb
+        bind l c
+        e <- is_error
+        if e then return ()
+        else do cnf <- sat_get
+                ncnf <- formap two_watch cnf
+                sat_set ncnf
+                return ()
+    clear_tobnd
+ where test = do e  <- is_error
+                 tb <- tobnd_peek
+                 return $ not e && tb /= Nothing
+\end{lstlisting}%stopzone
+
+La fonction boucle tant qu'il n'y a pas d'erreur et qu'il reste des littéraux
+à fixer. Si tel est le cas, on fixe le littéral suivant. Si cela s'avère
+impossible parce que déjà fixé à une autre valeur, on s'arrête (l'erreur est
+gérée dans la fonction \texttt{cdcl} qui appelle celle-ci). Sinon, on applique
+\texttt{two\_watch} à toutes les clauses avec \texttt{formap} et on met à jour
+les clauses.
+
+\subsection{L'algorithme principal}
+Et maintenant, l'algorithme principal qui attache ensemble les fonctions
+précédentes :
+\begin{lstlisting}
+cdcl :: Chooser a => MdSt a (Maybe Bool)
+cdcl = do e <- is_error
+          if e then do dec_restart
+                       b <- should_restart
+                       if b then return Nothing
+                            else do c <- get_error
+                                    dc <- derive_clause (fromJust c)
+                                    sat_add_clause dc
+                                    return $ Just False
+          else do ml <- choose
+                  if ml == Nothing then return $ Just True
+                  else do let l = fromJust ml
+                          tobnd_add l []
+                          push
+                          two_watch_all
+                          r <- cdcl
+                          if r /= Just False then do collapse
+                                                     return r
+                          else do pop
+                                  b <- is_new l
+                                  if b then do clear_error >> clear_new
+                                               tobnd_add (neg l) []
+                                               two_watch_all
+                                               r <- cdcl
+                                               b2 <- is_new l
+                                               if r == Just False && b2
+                                               then clear_new
+                                               else return ()
+                                               return r
+                                       else return $ Just False
+\end{lstlisting}%stopzone
+
+L'objectif de cet algorithme est de renvoyer \texttt{Just True} si le problème
+est satisfiables, auquel cas les valeurs actuelles (après le retour) du status
+sont solution, \texttt{Just False} si le problème est insatisfiable et
+\texttt{Nothing} si l'algorithme a du terminer prématurément du au mécanisme
+des redémarrage.
+
+Les erreurs sont gérées lors de l'appel récursif. En cas de conflits, on
+décrémente le compteur des redémarrage et si nécessaire on termine en indiquant
+qu'un redémarrage est nécessaire. Sinon, on apprend une nouvelle clause de
+l'erreur et on indique que la branche n'est pas satisfiable.
+
+Sinon, on choisit un nouveau littéral $l$. Si le sélectionneur retourne
+\texttt{Nothing}, c'est que toutes les variables sont fixées, auquel cas, comme
+il n'y a pas d'erreur, le programme retourne \texttt{Just True} et laisse
+l'assignement tel quel.
+
+Dans le cas contraire, on demande à fixer le nouveau littéral, on sauvegarde
+l'état, on propage et on appelle récursivement (s'il y a eu une erreur dans la
+propagation, elle est gérée lors de l'appel récursif). Si l'appel récursif
+renvoie \texttt{Nothing}, c'est que l'on doit terminer à cause d'un
+redémarrage, donc on propage le retour en supprimant l'état précédent qui ne
+sert plus à rien. S'il retourne \texttt{Just True}, c'est que le problème
+est satisfiable, et donc on procède de même en propageant le retour.
+
+Par contre, s'il retourne \texttt{Just False}, c'est que ce sous-problème est
+insatisfiable. Auquel cas, on oublie les derniers assignements avec l'appel
+à \texttt{pop}. On regarde alors si changer la variable de valeur va
+rendre vrai la clause apprise (s'il n'y a pas de clause apprise, il faut tester
+l'autre cas, c'est pour ça que \texttt{is\_new} renvoie vrai dans cette
+situation). Si ce n'est pas le cas, on remonte encore (c'est en ça que consiste
+le retour non chronologique). Sinon, on efface l'erreur et le marquage de la
+clause apprise comme nouvelle, et on procède de même sur l'autre branche de
+l'arbre d'exploration, en pensant à effacer le marquage de la nouvelle clause
+si nécessaire en remontant.
+
+\subsection{Les redémarrages}
+On remarque que l'algorithme précédent peut se terminer à cause d'un
+redémarrage : il faut donc le relancer tant qu'il renvoie \texttt{Nothing}.
+C'est le rôle de la fonction suivante :
+\begin{lstlisting}
+solver :: Chooser a => MdSt a (Maybe (Array Literal Bool))
+solver = do init_chooser
+            r <- tryuntil test (\i -> setre i >> clear >> cdcl) restarts
+            let b = fromJust r
+            if b then do v <- MdSt $ \s -> (s,head $ vars_st s)
+                         return $ Just $ mapArray fj v
+                 else return Nothing
+ where restarts = [2 ^ i | i <- [8..]]
+       luby = [ let k = 1 + (floor $ log2 i) in if i == 2^k - 1 then 2^(k-1)
+                                                else luby !! (i - 2^(k-1))
+              | i <- [1..]]
+       u = 32
+       log2 :: Int -> Float
+       log2 x = log (fromIntegral x) / log 2
+       test x = return $ x /= Nothing
+       clear = clear_vars >> clear_error >> clear_new
+       fj Nothing  = True
+       fj (Just v) = v
+\end{lstlisting}%stopzone
+
+De plus, cette fonction initialise le sélectionneur une fois avant les
+différents redémarrages. On observe ici l'implémentation de la stratégie
+\emph{luby32}. Enfin, elle transforme le retour de la fonction précédente
+en une forme plus simple : elle renvoie \texttt{Nothing} si le problème
+est insatisfiable et \texttt{Just a} où $a$ est un tableau indexé par les
+variables qui contient un assignement valide dans le cas contraire. On remarque
+de plus que si le problème est satisfait avec certaines variables encore libre,
+comme leur valeur importe peu et que l'on veut juste une solution, elle sont
+alors fixée à vrai.
+
+\subsection{Conclusion}
+Une dernière fonction est utilisée pour encadrer l'usage du monad
+\texttt{MdSt}, qui n'est pas exposé. Elle n'est pas présentée puisqu'elle n'a
+pas d'intérêt sans les détails du monad.
+
