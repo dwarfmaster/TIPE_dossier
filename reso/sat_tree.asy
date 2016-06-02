@@ -4,11 +4,14 @@ unitsize(10cm);
 int levels = 7;
 real h  = 4;
 real lh = h / levels;
-int[] rds = {2*37, 4*37, 4*37+1, 2*37+1, 4*37+2,4*37+3};
+int[] rds = {//2*37, 4*37, 4*37+1,
+             4*37+2,4*37+3};
 
-int[] bls = {  4,      6,
+ /*int[] bls = {  4,      6,
              16,18,  24,26,
              33,37,  49,53,};
+             */
+int[] bls = {4,18,37};
 int[] mkRDS() {
     int[] rs = {};
     int[] roots = {33,37,49,53};
@@ -19,7 +22,7 @@ int[] mkRDS() {
     }
     return rs;
 }
-int[] rds = mkRDS();
+// int[] rds = mkRDS();
 
 bool isH(int i, int[] a) {
     for(int j = 0; j < a.length; ++j) {
